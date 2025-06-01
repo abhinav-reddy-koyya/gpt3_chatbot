@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cortana - Your AI Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #101827;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 20px;
+      background: #1e293b;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .chat-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 12px;
+      line-height: 1.4;
+      animation: fadeIn 0.4s ease-in;
+      white-space: pre-wrap;
+    }
+
+    .user-bubble {
+      background: #38bdf8;
+      align-self: flex-end;
+      margin-left: auto;
+      color: black;
+    }
+
+    .bot-bubble {
+      background: #334155;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 15px;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+    }
+
+    #userInput {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 12px 20px;
+      background: #38bdf8;
+      border: none;
+      border-radius: 8px;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    .typing {
+      font-style: italic;
+      opacity: 0.7;
+      animation: blink 1s infinite;
+      margin: 10px 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>Cortana - Your AI Assistant</header>
+
+  <div class="chat-container" id="chat"></div>
+
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Ask Cortana anything..." onkeydown="handleKey(event)" />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <div class="chat-input">
+    <input type="file" id="imageUpload" accept="image/*" />
+    <button onclick="uploadImage()">Upload Image</button>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chat = document.getElementById("chat");
+
+      const userBubble = document.createElement("div");
+      userBubble.className = "bubble user-bubble";
+      userBubble.innerText = message;
+      chat.appendChild(userBubble);
+      chat.scrollTop = chat.scrollHeight;
+
+      input.value = "";
+
+      const typing = document.createElement("div");
+      typing.className = "typing bot-bubble";
+      typing.innerText = "Cortana is typing...";
+      chat.appendChild(typing);
+      chat.scrollTop = chat.scrollHeight;
+
+      const response = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+
+      chat.removeChild(typing);
+
+      const botBubble = document.createElement("div");
+      botBubble.className = "bubble bot-bubble";
+      botBubble.innerText = data.response;
+      chat.appendChild(botBubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function handleKey(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+
+    async function uploadImage() {
+      const input = document.getElementById("imageUpload");
+      const file = input.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const chat = document.getElementById("chat");
+
+      const uploading = document.createElement("div");
+      uploading.className = "typing bot-bubble";
+      uploading.innerText = "Cortana is processing your image...";
+      chat.appendChild(uploading);
+      chat.scrollTop = chat.scrollHeight;
+
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+
+      chat.removeChild(uploading);
+
+      const botBubble = document.createElement("div");
+      botBubble.className = "bubble bot-bubble";
+      botBubble.innerText = data.response;
+      chat.appendChild(botBubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
